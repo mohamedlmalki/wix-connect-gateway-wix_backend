@@ -1,7 +1,7 @@
 // functions/api/[[path]].js
 
-// Import the configuration directly. Note: This will be read-only on the deployed site.
-import config from '../../../src/headless/config/headless-config.json';
+// **FIXED**: Updated the import path to be much simpler.
+import config from '../headless-config.json';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -84,8 +84,6 @@ export async function onRequestPost(context) {
                 return new Response(JSON.stringify({ message: 'Contact deleted successfully.' }), { headers: { 'Content-Type': 'application/json' } });
             }
             
-            // Note: add-site and delete-site endpoints are not included as they modify the local file system, which is not supported.
-
             default:
                 return new Response(JSON.stringify({ message: `Endpoint ${path} not found.` }), {
                     status: 404,
