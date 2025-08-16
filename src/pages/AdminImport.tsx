@@ -392,7 +392,7 @@ const AdminImport = () => {
         toast.info(`Searching for members matching "${searchQuery}"...`);
 
         try {
-            const response = await fetch(`/api/headless-search`, {
+            const response = await fetch(`/api/headless?endpoint=search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -435,7 +435,7 @@ const AdminImport = () => {
         toast.info(`Deleting ${selectedMembers.length} selected member(s)...`);
 
         try {
-            const response = await fetch(`/api/headless-delete`, {
+            const response = await fetch(`/api/headless?endpoint=delete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

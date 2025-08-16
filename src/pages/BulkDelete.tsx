@@ -99,7 +99,7 @@ const BulkDelete = () => {
         setMembers([]);
         setSelectedMembers([]);
         try {
-            const response = await fetch(`/api/headless-list-members`, {
+             const response = await fetch(`/api/headless?endpoint=list-members`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ siteId: selectedSiteId }),

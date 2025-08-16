@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/_functions/:path*",
+      "destination": "https://colettesenger19254.wixsite.com/my-site-1/_functions/:path*"
+    }
+  ]
+}
