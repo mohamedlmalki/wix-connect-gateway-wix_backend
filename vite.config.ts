@@ -1,3 +1,5 @@
+// vite.config.ts
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
@@ -6,9 +8,7 @@ import { apiMiddleware } from './api-middleware.js';
 const wixSiteUrl = 'https://colettesenger19254.wixsite.com/my-site-1';
 
 export default defineConfig({
-  // **FIX**: Add this line back in. This is the key.
-  base: './',
-
+  // Make sure the `base: './'` line is removed.
   plugins: [
     react(),
     {
