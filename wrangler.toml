@@ -1,8 +1,5 @@
-# wrangler.toml
+# wrangler.toml (Corrected for Cloudflare Pages)
 
 name = "wix-connect-gateway-wix-backend"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-03-01"
-
-[functions]
-directory = "./functions"
