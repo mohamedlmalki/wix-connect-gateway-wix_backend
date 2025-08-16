@@ -4,10 +4,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { BarChart2, MailCheck, Users, MousePointerClick, MailX, AlertCircle, MailMinus, RefreshCw, Download } from "lucide-react";
+import { BarChart2, MailCheck, Users, MousePointerClick, MailX, AlertCircle, MailMinus, RefreshCw, Download, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 const API_BASE_URL = "/_functions";
+// **FIXED**: Increased page size to 200
+const RECIPIENTS_PAGE_SIZE = 200;
 
 interface ManagedSite {
     _id: string;
@@ -30,7 +32,7 @@ interface CampaignRecipient {
     lastActivityDate: string;
     emailAddress?: string;
     fullName?: string;
-    contactDeleted?: boolean; // This field is returned by the API
+    contactDeleted?: boolean;
 }
 
 const StatCard = ({ icon: Icon, title, value }) => (
@@ -55,6 +57,7 @@ const CampaignStatistics = () => {
 
     const [stats, setStats] = useState<CampaignStats | null>(null);
     const [recipients, setRecipients] = useState<CampaignRecipient[]>([]);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
     
     useEffect(() => {
         const loadSites = async () => {
@@ -80,6 +83,7 @@ const CampaignStatistics = () => {
         setSelectedCampaignId("");
         setStats(null);
         setRecipients([]);
+        setNextCursor(null);
     }, [selectedSiteId]);
 
     useEffect(() => {
@@ -89,6 +93,7 @@ const CampaignStatistics = () => {
             setStats(null);
         }
         setRecipients([]);
+        setNextCursor(null);
     }, [selectedCampaignId]);
 
     const handleFetchStats = async () => {
@@ -118,39 +123,63 @@ const CampaignStatistics = () => {
         }
     };
     
-    const handleFetchRecipients = async (e: FormEvent) => {
-        e.preventDefault();
+    const fetchRecipientsPage = async (cursor: string | null) => {
         if (!selectedSiteId || !selectedCampaignId || !selectedActivity) {
             toast.warning("Please select a project, campaign, and activity type.");
             return;
         }
         setIsFetchingRecipients(true);
-        setRecipients([]);
         try {
              const response = await fetch(`${API_BASE_URL}/getCampaignRecipients`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetSiteId: selectedSiteId, campaignId: selectedCampaignId, activity: selectedActivity }),
+                body: JSON.stringify({ 
+                    targetSiteId: selectedSiteId, 
+                    campaignId: selectedCampaignId, 
+                    activity: selectedActivity,
+                    cursor: cursor
+                }),
             });
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch recipients.');
+                const errorText = await response.text();
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.error || 'Failed to fetch recipients.');
+                } catch(e) {
+                    throw new Error(`An unexpected error occurred: ${errorText}`);
+                }
             }
             const data = await response.json();
             
-            // **FIXED**: Filter out recipients where contactDeleted is true
             const activeRecipients = (data.recipients || []).filter(r => !r.contactDeleted);
             
-            setRecipients(activeRecipients);
-            if (activeRecipients.length === 0) {
+            setRecipients(prev => cursor ? [...prev, ...activeRecipients] : activeRecipients);
+            
+            setNextCursor(data.pagingMetadata?.cursors?.next || null);
+
+            if (!cursor && activeRecipients.length === 0) {
                 toast.info("No active recipients found for this activity.");
             }
+
         } catch (error) {
             toast.error("Could not fetch recipients.", { description: error.message });
         } finally {
             setIsFetchingRecipients(false);
         }
     };
+
+    const handleInitialFetch = (e: FormEvent) => {
+        e.preventDefault();
+        setRecipients([]);
+        setNextCursor(null);
+        fetchRecipientsPage(null);
+    };
+
+    const handleLoadMore = () => {
+        if (nextCursor) {
+            fetchRecipientsPage(nextCursor);
+        }
+    }
     
     const exportEmailsToTxt = (recipients, activity) => {
         const emails = recipients.map(r => r.emailAddress).filter(Boolean);
@@ -203,7 +232,7 @@ const CampaignStatistics = () => {
                     </Card>
 
                     <Card>
-                        <form onSubmit={handleFetchRecipients}>
+                        <form onSubmit={handleInitialFetch}>
                             <CardHeader>
                                 <CardTitle>View Recipient Lists</CardTitle>
                                 <CardDescription>Choose a project, campaign, and activity type to view the list of recipients.</CardDescription>
@@ -225,7 +254,11 @@ const CampaignStatistics = () => {
                                         )}
                                     </SelectContent>
                                 </Select>
-                                <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+                                <Select value={selectedActivity} onValueChange={(value) => {
+                                    setSelectedActivity(value);
+                                    setRecipients([]);
+                                    setNextCursor(null);
+                                }}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="DELIVERED">Delivered</SelectItem>
@@ -238,8 +271,8 @@ const CampaignStatistics = () => {
                             </CardContent>
                             <CardFooter>
                                 <Button type="submit" disabled={isFetchingRecipients || !selectedCampaignId}>
-                                    <RefreshCw className={`mr-2 h-4 w-4 ${isFetchingRecipients ? 'animate-spin' : ''}`} />
-                                    {isFetchingRecipients ? "Fetching..." : "Fetch Recipients"}
+                                    <RefreshCw className={`mr-2 h-4 w-4 ${isFetchingRecipients && recipients.length === 0 ? 'animate-spin' : ''}`} />
+                                    {isFetchingRecipients && recipients.length === 0 ? "Fetching..." : "Fetch Recipients"}
                                 </Button>
                             </CardFooter>
                         </form>
@@ -255,7 +288,7 @@ const CampaignStatistics = () => {
                                 <Table>
                                     <TableHeader><TableRow><TableHead>Email Address</TableHead><TableHead>Full Name</TableHead><TableHead>Last Activity Date</TableHead></TableRow></TableHeader>
                                     <TableBody>
-                                        {isFetchingRecipients ? (<TableRow><TableCell colSpan={3} className="text-center h-24">Loading recipients...</TableCell></TableRow>) 
+                                        {isFetchingRecipients && recipients.length === 0 ? (<TableRow><TableCell colSpan={3} className="text-center h-24">Loading recipients...</TableCell></TableRow>) 
                                         : recipients.length > 0 ? (
                                             recipients.map(recipient => (
                                                 <TableRow key={recipient.contactId}>
@@ -269,6 +302,17 @@ const CampaignStatistics = () => {
                                 </Table>
                             </div>
                         </CardContent>
+                        {nextCursor && (
+                            <CardFooter>
+                                <Button onClick={handleLoadMore} disabled={isFetchingRecipients} className="w-full">
+                                    {isFetchingRecipients ? (
+                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
+                                    ) : (
+                                        "Load More"
+                                    )}
+                                </Button>
+                            </CardFooter>
+                        )}
                     </Card>
                 </div>
             </div>

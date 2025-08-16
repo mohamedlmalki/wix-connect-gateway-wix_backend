@@ -27,7 +27,7 @@ import {
     DialogClose,
     DialogFooter
 } from "@/components/ui/dialog";
-import { UserPlus, PlayCircle, Building, Terminal, RefreshCw, Trash2, CheckCircle, XCircle, FileJson, Clock, PauseCircle, StopCircle, Search, Save, Timer, Download, Send, Link, Code } from "lucide-react";
+import { UserPlus, PlayCircle, Building, Terminal, RefreshCw, Trash2, CheckCircle, XCircle, FileJson, Clock, PauseCircle, StopCircle, Search, Save, Timer, Download, Link, Code } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -83,8 +83,6 @@ const AdminImport = () => {
     // State for the new dialogs
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [actionResponse, setActionResponse] = useState("");
-    const [testEmailAddress, setTestEmailAddress] = useState("");
-    const [testEmailSubject, setTestEmailSubject] = useState("This is a test email");
     const [htmlToValidate, setHtmlToValidate] = useState("<a href='https://example.com'>Example</a>");
     const [urlToValidate, setUrlToValidate] = useState("https://www.wix.com");
 
@@ -472,47 +470,6 @@ const AdminImport = () => {
     }, [selectedSite, importJobs, setImportJobs]);
 
     // Handlers for the new action dialogs
-    const handleSendTestEmail = async () => {
-        const siteConfig = sites.find(s => s.siteId === selectedSite);
-        if (!siteConfig) {
-            toast.error("Site not selected.");
-            return;
-        }
-        if (!siteConfig.campaignId) {
-            toast.error("No Campaign ID configured for this site.", {
-                description: "Please add a Campaign ID on the 'Manage Sites' page.",
-            });
-            return;
-        }
-        if (!testEmailAddress || !testEmailSubject) {
-            toast.warning("Please fill in all fields.");
-            return;
-        }
-
-        setIsActionLoading(true);
-        setActionResponse("");
-        try {
-            const res = await fetch('/api/headless-send-test-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    siteId: selectedSite,
-                    toEmailAddress: testEmailAddress,
-                    emailSubject: testEmailSubject
-                }),
-            });
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.message || "Failed to send test email.");
-            setActionResponse(JSON.stringify(result, null, 2) || "Success! (Empty Response)");
-            toast.success("Test email sent successfully!");
-        } catch (error: any) {
-            setActionResponse(error.message);
-            toast.error("Failed to send test email", { description: error.message });
-        } finally {
-            setIsActionLoading(false);
-        }
-    };
-
     const handleValidateHtml = async () => {
         if (!selectedSite || !htmlToValidate) {
             toast.warning("Please select a site and provide HTML content.");
@@ -639,31 +596,6 @@ const AdminImport = () => {
                             <Button onClick={handleSearch} disabled={isSearching || !selectedSite} size="icon">
                                 <Search className="h-4 w-4"/>
                             </Button>
-                            <Dialog onOpenChange={() => setActionResponse("")}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon"><Send className="h-4 w-4" /></Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Send Test Email</DialogTitle>
-                                        <CardDescription>Send a preview of an email campaign.</CardDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4 py-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="test-email-address">Recipient Email</Label>
-                                            <Input id="test-email-address" value={testEmailAddress} onChange={e => setTestEmailAddress(e.target.value)} placeholder="recipient@example.com" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="test-email-subject">Subject</Label>
-                                            <Input id="test-email-subject" value={testEmailSubject} onChange={e => setTestEmailSubject(e.target.value)} />
-                                        </div>
-                                        <Textarea readOnly value={actionResponse} className="h-24 font-mono text-xs bg-muted" placeholder="API response..." />
-                                    </div>
-                                    <DialogFooter>
-                                        <Button onClick={handleSendTestEmail} disabled={isActionLoading}>{isActionLoading ? "Sending..." : "Send"}</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
                             <Dialog onOpenChange={() => setActionResponse("")}>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="icon"><Code className="h-4 w-4" /></Button>

@@ -124,7 +124,7 @@ export const apiMiddleware = (req, res, next) => {
       }
       
       // Handle new campaign/validation endpoints separately
-      if (req.url === '/api/headless-validate-html' || req.url === '/api/headless-validate-url' || req.url === '/api/headless-send-test-email') {
+      if (req.url === '/api/headless-validate-html' || req.url === '/api/headless-validate-url') {
             const { siteId } = parsedBody;
             const projects = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             const project = projects.find(p => p.siteId === siteId);
@@ -145,22 +145,7 @@ export const apiMiddleware = (req, res, next) => {
             let requestBody = '';
 
             try {
-                if (req.url === '/api/headless-send-test-email') {
-                    const { toEmailAddress, emailSubject } = parsedBody;
-                    if (!project.campaignId) {
-                        throw new Error("No Campaign ID is configured for this site.");
-                    }
-                    apiUrl = `https://www.wixapis.com/email-marketing/v1/campaigns/${project.campaignId}/test`;
-                    
-                    // Reordered payload to match Wix documentation
-                    requestBody = JSON.stringify({ emailSubject, toEmailAddress });
-                    
-                    options.method = 'POST';
-                    options.headers['Content-Length'] = Buffer.byteLength(requestBody);
-                    const result = await makeApiRequest(apiUrl, options, requestBody);
-                    res.statusCode = result.statusCode;
-                    res.end(JSON.stringify(result.body));
-                } else if (req.url === '/api/headless-validate-html') {
+                if (req.url === '/api/headless-validate-html') {
                     const { html } = parsedBody;
                     apiUrl = `https://www.wixapis.com/email-marketing/v1/campaign-validation/validate-html-links`;
                     requestBody = JSON.stringify({ html });
