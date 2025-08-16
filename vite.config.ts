@@ -6,6 +6,9 @@ import { apiMiddleware } from './api-middleware.js';
 const wixSiteUrl = 'https://colettesenger19254.wixsite.com/my-site-1';
 
 export default defineConfig({
+  // Add this line
+  base: './',
+
   plugins: [
     react(),
     {
