@@ -1,5 +1,12 @@
-# wrangler.toml (Corrected for Cloudflare Pages)
+# wrangler.toml
 
 name = "wix-connect-gateway-wix-backend"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-03-01"
+
+[[kv_namespaces]]
+binding = "SITES_CONFIG"
+# Use your ID here
+id = "37b57560bb6740628235c78ecfed6180" 
+# Use the exact same ID here
+preview_id = "37b57560bb6740628235c78ecfed6180"
